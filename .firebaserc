@@ -1,0 +1,11 @@
+{
+  "targets": {
+    "ingreso-egreso-app-cab66": {
+      "hosting": {
+        "ingresoEgresoApp": [
+          "ingreso-egreso-app-cab66"
+        ]
+      }
+    }
+  }
+}
