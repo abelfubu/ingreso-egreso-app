@@ -1,8 +1,11 @@
 import { Injectable } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/auth';
 import { AngularFirestore } from '@angular/fire/firestore';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Store } from '@ngrx/store';
+import { Observable, of } from 'rxjs';
+import { catchError, filter, map, switchMap, tap } from 'rxjs/operators';
+import { AppState } from '../app.reducer';
+import { setUser, unsetUser } from '../auth/auth.actions';
 import { User } from '../models/user.model';
 
 @Injectable({
@@ -11,11 +14,21 @@ import { User } from '../models/user.model';
 export class AuthService {
   constructor(
     private angularFireAuth: AngularFireAuth,
-    public firestore: AngularFirestore
+    public firestore: AngularFirestore,
+    private store: Store<AppState>
   ) {}
 
   initAuthListener(): void {
-    this.angularFireAuth.authState.subscribe((data) => console.dir(data));
+    this.angularFireAuth.authState
+      .pipe(
+        tap((user) => !user && this.store.dispatch(unsetUser())),
+        filter((user) => !!user),
+        switchMap((user) =>
+          this.firestore.doc(user.uid + '/usuario').valueChanges()
+        ),
+        catchError(() => of(null))
+      )
+      .subscribe((user: User) => this.store.dispatch(setUser({ user })));
   }
 
   createUser(nombre: string, email: string, password: string): Promise<any> {
