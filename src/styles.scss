@@ -2,3 +2,8 @@
 .cursor {
   cursor: pointer;
 }
+
+.table td,
+.table th {
+  vertical-align: middle !important;
+}

@@ -6,12 +6,19 @@ import { Observable, of } from 'rxjs';
 import { catchError, filter, map, switchMap, tap } from 'rxjs/operators';
 import { AppState } from '../app.reducer';
 import { setUser, unsetUser } from '../auth/auth.actions';
+import { unsetItems } from '../ingreso-egreso/ingreso-egreso.actions';
 import { User } from '../models/user.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
+  private _user: User;
+
+  get user(): User {
+    return { ...this._user };
+  }
+
   constructor(
     private angularFireAuth: AngularFireAuth,
     public firestore: AngularFirestore,
@@ -21,14 +28,23 @@ export class AuthService {
   initAuthListener(): void {
     this.angularFireAuth.authState
       .pipe(
-        tap((user) => !user && this.store.dispatch(unsetUser())),
+        tap((user) => {
+          if (!user) {
+            this.store.dispatch(unsetUser());
+            this.store.dispatch(unsetItems());
+            this._user = null;
+          }
+        }),
         filter((user) => !!user),
         switchMap((user) =>
           this.firestore.doc(user.uid + '/usuario').valueChanges()
         ),
         catchError(() => of(null))
       )
-      .subscribe((user: User) => this.store.dispatch(setUser({ user })));
+      .subscribe((user: User) => {
+        this.store.dispatch(setUser({ user }));
+        this._user = user;
+      });
   }
 
   createUser(nombre: string, email: string, password: string): Promise<any> {
